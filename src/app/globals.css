@@ -40,6 +40,10 @@ body {
   @apply text-4xl md:text-6xl font-black uppercase;
 }
 
+.section-subtitle {
+  @apply text-2xl md:text-4xl font-black uppercase;
+}
+
 .card {
   @apply bg-zinc-900/70 border border-zinc-800 rounded-3xl p-8 backdrop-blur-sm;
 }
