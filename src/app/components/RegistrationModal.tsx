@@ -67,6 +67,15 @@ function readStoredAttribution(key: string): AttributionData | null {
   }
 }
 
+function inferNetwork(data: AttributionData | null): string {
+  if (!data) return "";
+  if (data.utm_source) return data.utm_source;
+  if (data.ttclid) return "tiktok";
+  if (data.fbclid) return "instagram/facebook";
+  if (data.gclid) return "google";
+  return "";
+}
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -128,10 +137,13 @@ export default function RegistrationModal({
         process.env.NEXT_PUBLIC_REGISTRATION_API_URL;
 
       if (apiUrl) {
+        const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+
         const response = await fetch(apiUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...(apiKey ? { "X-Api-Key": apiKey } : {}),
           },
           body: JSON.stringify(payload),
         });
@@ -152,14 +164,19 @@ export default function RegistrationModal({
     }
   }
 
-  const source =
-    (typeof window !== "undefined" &&
-      (new URLSearchParams(window.location.search).get(
-        "utm_source",
-      ) ||
-        readStoredAttribution(LAST_TOUCH_KEY)?.utm_source ||
-        readStoredAttribution(FIRST_TOUCH_KEY)?.utm_source)) ||
-    "direto";
+  const source = (() => {
+    if (typeof window === "undefined") return "direto";
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("utm_source")) return params.get("utm_source") as string;
+    if (params.get("ttclid")) return "tiktok";
+    if (params.get("fbclid")) return "instagram/facebook";
+    if (params.get("gclid")) return "google";
+    return (
+      inferNetwork(readStoredAttribution(LAST_TOUCH_KEY)) ||
+      inferNetwork(readStoredAttribution(FIRST_TOUCH_KEY)) ||
+      "direto"
+    );
+  })();
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-5">
